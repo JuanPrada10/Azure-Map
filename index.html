@@ -2,7 +2,6 @@
 <html lang="en">
   <head>
     <title>Azure Maps</title>
-
     <meta charset="utf-8" />
     <link rel="shortcut icon" href="/favicon.ico" />
     <meta
@@ -19,15 +18,27 @@
     <script>
       var map, datasource;
 
-      function getMap() {
-        //Initialize a map instance.
+      // Función asíncrona para cargar datos de terremotos
+      async function loadEarthquakeData() {
+        try {
+          const response = await fetch(
+            "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson?minlatitude=-56.0&maxlatitude=32.0&minlongitude=-120.0&maxlongitude=-30.0"
+          );
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error("Error al cargar datos de terremotos:", error);
+          return null;
+        }
+      }
+
+      async function getMap() {
+        // Inicializar el mapa
         map = new atlas.Map("myMap", {
           center: [-60, -20],
           zoom: 3.5,
           style: "grayscale_dark",
           view: "Auto",
-
-          //Add authentication details for connecting to Azure Maps.
           authOptions: {
             authType: "subscriptionKey",
             subscriptionKey:
@@ -35,34 +46,30 @@
           },
         });
 
-        //Wait until the map resources are ready.
-        map.events.add("ready", function () {
-          //Create a data source and add it to the map.
+        // Esperar a que el mapa esté listo
+        map.events.add("ready", async function () {
+          // Crear fuente de datos
           datasource = new atlas.source.DataSource(null, {
-            //Tell the data source to cluster point data.
             cluster: true,
-
-            //The radius in pixels to cluster points together.
             clusterRadius: 15,
           });
           map.sources.add(datasource);
 
-          //Create a heatmap and add it to the map.
+          // Capa de heatmap
           map.layers.add(
             new atlas.layer.HeatMapLayer(datasource, null, {
-              //Set the weight to the point_count property of the data points.
               weight: ["get", "point_count"],
-
-              //Optionally adjust the radius of each heat point.
               radius: 20,
             }),
             "labels"
           );
 
-          //Load a data set of points, in this case earthquake data from the USGS.
-          datasource.importDataFromUrl(
-            "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson?minlatitude=-56.0&maxlatitude=32.0&minlongitude=-120.0&maxlongitude=-30.0"
-          );
+          // Cargar datos de terremotos
+          const earthquakeData = await loadEarthquakeData();
+          if (earthquakeData) {
+            // Añadir datos al DataSource
+            datasource.add(earthquakeData);
+          }
         });
       }
     </script>
@@ -76,7 +83,7 @@
           <span
             ><img
               src="./assets/Microsoft_Azure.svg"
-              alt="azure logo "
+              alt="azure logo"
               class="w-15 h-15"
           /></span>
           <a href="#">Azure<span class="text-sky-800"> Maps</span></a>
@@ -92,12 +99,10 @@
           <li class="hover:text-sky-700 transition duration-300">
             <a
               target="_blank"
-              href="https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson?minlatitude=-56.0&maxlatitude=-17.5&minlongitude=-75.0&maxlongitude=-66.0"
+              href="https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson"
               >API-Earthquake</a
             >
           </li>
-          <li><a href="#">Maps</a></li>
-          <li><a href="#">Maps</a></li>
         </ul>
       </nav>
     </header>
